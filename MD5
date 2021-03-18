@@ -1,0 +1,10 @@
+a30edea3499a1fb5abaaece57d7a721e *DESCRIPTION
+f00dd2758635c1044af2aea214bda2e7 *NAMESPACE
+15de44965d254251f81c385578601ea2 *R/spidR.R
+89d2bbde00457b7727449f9a5c668349 *data/wscmap.rda
+4e68b3a285922c7bd7a3f2dbdf7c41e8 *man/map.Rd
+3433acee58639a645592c1a29b6d91ab *man/records.Rd
+2fc167c24a743991615fdfd802a17b77 *man/wsc.data.Rd
+536fc9e0ace8d6df14fa6f488ff29256 *man/wsc.names.Rd
+b3f26cca69f446632d658b303f37b6dd *man/wscmap.Rd
+9a233369d7ced1776d73f8591cde55b1 *man/wst.data.Rd
