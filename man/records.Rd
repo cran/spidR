@@ -2,25 +2,29 @@
 % Please edit documentation in R/spidR.R
 \name{records}
 \alias{records}
-\title{Downloads coordinate data.}
+\title{Get coordinate data from GBIF and WST.}
 \usage{
-records(sp)
+records(tax, order = FALSE)
 }
 \arguments{
-\item{sp}{A single species name.}
+\item{tax}{A taxon name or vector with taxa names.}
+
+\item{order}{Order taxa names alphabetically or keep as in tax.}
 }
 \value{
-A data.frame with longitude and latitude.
+A data.frame with species name, longitude, latitude and source.
 }
 \description{
-Downloads coordinate data from GBIF and the World Spider Trait Database.
+Downloads coordinate data from records in GBIF and the World Spider Trait database.
 }
 \details{
-Outputs non-duplicate records with geographical (long, lat) coordinates. As always when using data from multiple sources the user should be careful and check if records "make sense" before using them.
+Outputs non-duplicate records with geographical (long, lat) coordinates.
+As always when using data from multiple sources the user should be careful and check if records "make sense" before using them.
 }
 \examples{
 \dontrun{
 records("Pardosa hyperborea")
+records(tax = c("Pardosa hyperborea", "Anapistula"), order = TRUE)
 }
 }
 \references{

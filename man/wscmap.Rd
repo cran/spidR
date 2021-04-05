@@ -3,7 +3,7 @@
 \docType{data}
 \name{wscmap}
 \alias{wscmap}
-\title{Distribution of spiders at the World Spider Catalogue.}
+\title{Matrix matching WSC and ISO3 country codes.}
 \format{
 A matrix with regions and corresponding ISO3 codes.
 }

@@ -2,18 +2,29 @@
 % Please edit documentation in R/spidR.R
 \name{map}
 \alias{map}
-\title{Map species range.}
+\title{Map species ranges.}
 \usage{
-map(sp, countries = TRUE, records = TRUE, window = FALSE)
+map(
+  tax,
+  countries = TRUE,
+  records = TRUE,
+  zoom = FALSE,
+  window = FALSE,
+  order = FALSE
+)
 }
 \arguments{
-\item{sp}{A single species name.}
+\item{tax}{A taxon name or vector with taxa names.}
 
 \item{countries}{Maps countries according to WSC.}
 
 \item{records}{Maps records according to GBIF and WST.}
 
+\item{zoom}{if records is TRUE, the map will be zoomed to the region with records.}
+
 \item{window}{Indicates if the map should open in a new window.}
+
+\item{order}{Order taxa names alphabetically or keep as in tax.}
 }
 \value{
 A world map with countries and records highlighted.
@@ -26,8 +37,9 @@ Countries based on the interpretation of the textual descriptions available at t
 }
 \examples{
 \dontrun{
-map("Iberesia machadoi", window = TRUE)
-map("Pardosa hyperborea", countries = FALSE)
+map(c("Pardosa hyperborea"))
+map("Amphiledorus", zoom = TRUE)
+map(c("Pardosa hyperborea", "Iberesia machadoi"), countries  = FALSE, zoom = TRUE, window = TRUE)
 }
 }
 \references{
