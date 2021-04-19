@@ -2,14 +2,20 @@
 % Please edit documentation in R/spidR.R
 \name{taxonomy}
 \alias{taxonomy}
-\title{Get higher taxa from species.}
+\title{Get taxonomy from species.}
 \usage{
-taxonomy(tax, order = FALSE)
+taxonomy(tax, check = FALSE, aut = FALSE, id = FALSE, order = FALSE)
 }
 \arguments{
 \item{tax}{A taxon name or vector with taxa names.}
 
-\item{order}{Order species names alphabetically or keep as in tax.}
+\item{check}{species names should be replaced by possible matches in the WSC if outdated.}
+
+\item{aut}{add species authorities.}
+
+\item{id}{the lsid should be returned.}
+
+\item{order}{Order taxa names alphabetically or keep as in tax.}
 }
 \value{
 A data.frame with species and taxonomy.
@@ -18,12 +24,12 @@ A data.frame with species and taxonomy.
 Get species sub/infraorder, family and genus from the World Spider Catalogue.
 }
 \details{
-This function will get species sub/infraorder, family and genus from the World Spider Catalogue (2021).
+This function will get species sub/infraorder, family and genus from the World Spider Catalogue (2021). Optionally, it will correct the species names (using function checknames) and provide the lsid and authors from the WSC (using functions lsid and authors).
 }
 \examples{
 \dontrun{
 taxonomy("Symphytognathidae", order = TRUE)
-taxonomy(c("Iberesia machadoi", "Nemesia bacelarae", "Amphiledorus ungoliantae"))
+taxonomy(c("Nemesia machadoi", "Nemesia bacelari"), check = TRUE, aut = TRUE, id = TRUE)
 }
 }
 \references{

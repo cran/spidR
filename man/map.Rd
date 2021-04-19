@@ -8,8 +8,8 @@ map(
   tax,
   countries = TRUE,
   records = TRUE,
+  hires = FALSE,
   zoom = FALSE,
-  window = FALSE,
   order = FALSE
 )
 }
@@ -20,9 +20,9 @@ map(
 
 \item{records}{Maps records according to GBIF and WST.}
 
-\item{zoom}{if records is TRUE, the map will be zoomed to the region with records.}
+\item{hires}{Provides high resolution maps. Beware it might take longer to render.}
 
-\item{window}{Indicates if the map should open in a new window.}
+\item{zoom}{If records is TRUE, the map will be zoomed to the region with records.}
 
 \item{order}{Order taxa names alphabetically or keep as in tax.}
 }
@@ -39,11 +39,11 @@ Countries based on the interpretation of the textual descriptions available at t
 \dontrun{
 map(c("Pardosa hyperborea"))
 map("Amphiledorus", zoom = TRUE)
-map(c("Pardosa hyperborea", "Iberesia machadoi"), countries  = FALSE, zoom = TRUE, window = TRUE)
+map(c("Pardosa hyperborea", "Iberesia machadoi"), countries  = FALSE, hires = TRUE, zoom = TRUE)
 }
 }
 \references{
-Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
+Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The world spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
 
 World Spider Catalog (2021). World Spider Catalog. Version 22.0. Natural History Museum Bern, online at http://wsc.nmbe.ch. doi: 10.24436/2.
 }

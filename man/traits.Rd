@@ -11,9 +11,9 @@ traits(
   life = NULL,
   country = NULL,
   habitat = NULL,
-  order = FALSE,
   user = "",
-  key = ""
+  key = "",
+  order = FALSE
 )
 }
 \arguments{
@@ -29,11 +29,11 @@ traits(
 
 \item{habitat}{A vector with required habitat(s).}
 
-\item{order}{Order taxa names alphabetically or keep as in tax.}
-
 \item{user}{To obtain restricted data get a user name from https://spidertraits.sci.muni.cz/api.}
 
 \item{key}{To obtain restricted data get an api key from https://spidertraits.sci.muni.cz/api.}
+
+\item{order}{Order taxa names alphabetically or keep as in tax.}
 }
 \value{
 A matrix with trait data.
@@ -56,5 +56,5 @@ traits(c("Iberesia machadoi", "Zodarion costapratae"), trait = c("balo", "bole")
 \references{
 Lowe, E., Wolff, J.O., Aceves-Aparicio, A., Birkhofer, K., Branco, V.V., Cardoso, P., Chichorro, F., Fukushima, C.S., Goncalves-Souza, T., Haddad, C.R., Isaia, M., Krehenwinkel, H., Audisio, T.L., Macias-Hernandez, N., Malumbres-Olarte, J., Mammola, S., McLean, D.J., Michalko, R., Nentwig, W., Pekar, S., Petillon, J., Privet, K., Scott, C., Uhl, G., Urbano-Tenorio, F., Wong, B.H. & Herbestein, M.E. (2020). Towards establishment of a centralized spider traits database. Journal of Arachnology, 48: 103-109. https://doi.org/10.1636/0161-8202-48.2.103
 
-Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
+Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The world spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
 }

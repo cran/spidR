@@ -4,15 +4,17 @@
 \alias{checknames}
 \title{Check taxa names in WSC.}
 \usage{
-checknames(tax, order = FALSE)
+checknames(tax, full = FALSE, order = FALSE)
 }
 \arguments{
 \item{tax}{A taxon name or vector with taxa names.}
 
+\item{full}{returns the full list of names.}
+
 \item{order}{Order taxa alphabetically or keep as in tax.}
 }
 \value{
-If any mismatches, a matrix with taxa not found in WSC.
+If any mismatches, a matrix with taxa not found in WSC or, if full = TRUE, the full list of names.
 }
 \description{
 Check taxa names against the World Spider Catalogue.
@@ -22,7 +24,9 @@ This function will check if all species, genera and family names in tax are upda
 }
 \examples{
 \dontrun{
-checknames(tax = c("Nemesis", "Nemesia brauni", "Iberesia machadoi", "Nemesia bacelari"))
+tax = c("Nemesis", "Nemesia brauni", "Iberesia machadoi", "Nemesia bacelari")
+checknames(tax)
+checknames(tax, full = TRUE, order = TRUE)
 }
 }
 \references{

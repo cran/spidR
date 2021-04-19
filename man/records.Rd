@@ -12,7 +12,7 @@ records(tax, order = FALSE)
 \item{order}{Order taxa names alphabetically or keep as in tax.}
 }
 \value{
-A data.frame with species name, longitude, latitude and source.
+A data.frame with species name, longitude, latitude, source database and reference.
 }
 \description{
 Downloads coordinate data from records in GBIF and the World Spider Trait database.
@@ -28,5 +28,5 @@ records(tax = c("Pardosa hyperborea", "Anapistula"), order = TRUE)
 }
 }
 \references{
-Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
+Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The world spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
 }

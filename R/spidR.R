@@ -1,12 +1,13 @@
 #####spidR - Spider Biodiversity Tools
-#####Version 1.0.0 (2021-04-05)
+#####Version 1.0.1 (2021-04-19)
 #####By Pedro Cardoso
 #####Maintainer: pedro.cardoso@helsinki.fi
 #####Reference: None yet.
-#####Changed from v0.1.0:
-#####Added authors, distribution, lsid, species, taxonomy
-#####Highly improved inner workings of all functions
-#####Improved help descriptions
+#####Changed from v1.0.0:
+#####new parameters in taxonomy
+#####implemented hires and deprecated window in map
+#####new outputs in records and checknames
+#####reordered parameters in traits
 
 #####required packages
 library("graphics")
@@ -14,6 +15,7 @@ library("httr")
 library("jsonlite")
 library("rgbif")
 library("rworldmap")
+library("rworldxtra")
 library("stats")
 library("utils")
 #' @import graphics
@@ -21,6 +23,7 @@ library("utils")
 #' @import jsonlite
 #' @import rgbif
 #' @import rworldmap
+#' @import rworldxtra
 #' @import stats
 #' @import utils
 
@@ -67,12 +70,13 @@ getTax <- function(tax){
 wsc <- function(){
 
   if(!exists("wscdata") || is.null(wscdata) || ((Sys.time() - attributes(wscdata)$lastUpdate) > 1440)){
-
+    
+    cat("Retrieving current data from the World Spider Catalogue (WSC)...\n")
     #fetch data from wsc (try both current and previous day)
     today = gsub("-", "", as.character(Sys.Date()))
     yesterday = gsub("-", "", as.character(Sys.Date()-1))
-    wscdata = tryCatch(read.csv2(paste("https://wsc.nmbe.ch/resources/species_export_", today, ".csv", sep = ""), sep = ","),
-                   warning = function(x) x = read.csv2(paste("https://wsc.nmbe.ch/resources/species_export_", yesterday, ".csv", sep = ""), sep = ","))
+    wscdata = tryCatch(read.csv2(paste("https://wsc.nmbe.ch/resources/species_export_", today, ".csv", sep = ""), sep = ",", encoding = "UTF-8"),
+                   warning = function(x) x = read.csv2(paste("https://wsc.nmbe.ch/resources/species_export_", yesterday, ".csv", sep = ""), sep = ","), encoding = "UTF-8")
     #clean data
     wscdata[,1] = do.call(paste, wscdata[, 4:5])
     colnames(wscdata)[1:2] = c("name", "lsid")
@@ -82,22 +86,24 @@ wsc <- function(){
     pos <- 1
     envir = as.environment(pos)
     assign("wscdata", wscdata, envir = envir)
-    cat("WSC data is now ready to be used.\n")
   }
 }
 
 #' Check taxa names in WSC.
 #' @description Check taxa names against the World Spider Catalogue.
 #' @param tax A taxon name or vector with taxa names.
+#' @param full returns the full list of names.
 #' @param order Order taxa alphabetically or keep as in tax.
 #' @details This function will check if all species, genera and family names in tax are updated according to the World Spider Catalogue (2021). If not, it returns a matrix with valid synonym or possible misspellings using fuzzy matching (Levenshtein edit distance).
-#' @return If any mismatches, a matrix with taxa not found in WSC.
+#' @return If any mismatches, a matrix with taxa not found in WSC or, if full = TRUE, the full list of names.
 #' @references World Spider Catalog (2021). World Spider Catalog. Version 22.0. Natural History Museum Bern, online at http://wsc.nmbe.ch. doi: 10.24436/2.
 #' @examples \dontrun{
-#' checknames(tax = c("Nemesis", "Nemesia brauni", "Iberesia machadoi", "Nemesia bacelari"))
+#' tax = c("Nemesis", "Nemesia brauni", "Iberesia machadoi", "Nemesia bacelari")
+#' checknames(tax)
+#' checknames(tax, full = TRUE, order = TRUE)
 #' }
 #' @export
-checknames <- function(tax, order = FALSE){
+checknames <- function(tax, full = FALSE, order = FALSE){
 
   wsc()
   
@@ -109,12 +115,12 @@ checknames <- function(tax, order = FALSE){
     return("All taxa OK!")
   } else {
     mismatches = cbind(mismatches, rep(NA, length(mismatches)))
-    colnames(mismatches) = c("Not Found", "Possible match")
+    colnames(mismatches) = c("Species", "Match")
     for(i in 1:nrow(mismatches)){
       
       #detect synonyms
-      tax = sub(" ", "%20", mismatches[i, 1])
-      id = httr::GET(paste("https://spidertraits.sci.muni.cz/backend/taxonomy/valid-names?taxon=", tax, sep = ""))
+      tax2 = sub(" ", "%20", mismatches[i, 1])
+      id = httr::GET(paste("https://spidertraits.sci.muni.cz/backend/taxonomy/valid-names?taxon=", tax2, sep = ""))
       id = content(id)$item$lsid
       id = wscdata[wscdata$lsid == id, 1]
 
@@ -123,7 +129,17 @@ checknames <- function(tax, order = FALSE){
         d = adist(allNames, mismatches[i, 1])
         id = allNames[which(d == min(d))]
       }
-      mismatches[i, 2] = id
+      if(length(id) == 1){
+        mismatches[i, 2] = id
+      } else {
+        mismatches[i, 2] = paste(id, collapse = ", ")
+      }
+    }
+    if(full){
+      fulltable = cbind(tax, tax)
+      colnames(fulltable) = c("Species", "Match")
+      fulltable[which(tax %in% mismatches[,1]), 2] = mismatches [, 2]
+      mismatches = fulltable
     }
     if(order)
       mismatches = mismatches[order(mismatches[, 1]), ]
@@ -154,12 +170,12 @@ authors <- function(tax, order = FALSE){
     results = results[order(results[, 1]), ]
   else
     results = results[order(match(results[, 1], tax)), ]
-  colnames(results) = c("Species", "Authority")
+  colnames(results) = c("Species", "Authors")
   rownames(results) = NULL
   for(sp in 1:nrow(results)){
-    results$Authority[sp] = paste(filterTable$author[sp],", ", filterTable$year[sp], sep = "")
+    results$Authors[sp] = paste(filterTable$author[sp],", ", filterTable$year[sp], sep = "")
     if(filterTable$parentheses[sp] == 1)
-      results$Authority[sp] = paste("(", results$Authority[sp],")", sep = "")
+      results$Authors[sp] = paste("(", results$Authors[sp],")", sep = "")
   }
   return(results)
 }
@@ -245,23 +261,28 @@ species <- function(tax, order = FALSE){
   return(results)
 }
 
-#' Get higher taxa from species.
+#' Get taxonomy from species.
 #' @description Get species sub/infraorder, family and genus from the World Spider Catalogue.
 #' @param tax A taxon name or vector with taxa names.
-#' @param order Order species names alphabetically or keep as in tax.
-#' @details This function will get species sub/infraorder, family and genus from the World Spider Catalogue (2021).
+#' @param check species names should be replaced by possible matches in the WSC if outdated.
+#' @param aut add species authorities.
+#' @param id the lsid should be returned.
+#' @param order Order taxa names alphabetically or keep as in tax.
+#' @details This function will get species sub/infraorder, family and genus from the World Spider Catalogue (2021). Optionally, it will correct the species names (using function checknames) and provide the lsid and authors from the WSC (using functions lsid and authors).
 #' @return A data.frame with species and taxonomy.
 #' @references World Spider Catalog (2021). World Spider Catalog. Version 22.0. Natural History Museum Bern, online at http://wsc.nmbe.ch. doi: 10.24436/2.
 #' @examples \dontrun{
 #' taxonomy("Symphytognathidae", order = TRUE)
-#' taxonomy(c("Iberesia machadoi", "Nemesia bacelarae", "Amphiledorus ungoliantae"))
+#' taxonomy(c("Nemesia machadoi", "Nemesia bacelari"), check = TRUE, aut = TRUE, id = TRUE)
 #' }
 #' @export
-taxonomy <- function(tax, order = FALSE){
+taxonomy <- function(tax, check = FALSE, aut = FALSE, id = FALSE, order = FALSE){
 
   wsc()
+  if(check)
+    tax = checknames(tax, full = TRUE)[, 2]
   tax = getTax(tax)
-
+  
   results = wscdata[wscdata$name %in% tax, c(2,3,4,1)]
   for(i in 1:nrow(results)){
     if(results$family[i] == "Liphistiidae")
@@ -271,12 +292,20 @@ taxonomy <- function(tax, order = FALSE){
     else
       results$lsid[i] = "Araneomorphae"
   }
+  colnames(results)[1:4] = c("Sub/Infraorder", "Family", "Genus", "Species")
+  rownames(results) = NULL
+  
   if(order)
-    results = results[order(results[, 4]), ]
+    results = results[order(results[, 1], results[, 2], results[, 3], results[, 4]), ]
   else
     results = results[order(match(results[, 4], tax)), ]
-  colnames(results) = c("Sub/Infraorder", "Family", "Genus", "Species")
-  rownames(results) = NULL
+  
+    if(id)
+    results = data.frame(results, lsid = lsid(results$Species)$LSID)
+  
+  if(aut)
+    results$Species = apply(authors(results$Species), 1, paste, collapse = " ")
+
   return(results)
 }
 
@@ -288,13 +317,13 @@ taxonomy <- function(tax, order = FALSE){
 #' @param life A vector with required life stage(s).
 #' @param country A vector with required country(ies) ISO3 code(s).
 #' @param habitat A vector with required habitat(s).
-#' @param order Order taxa names alphabetically or keep as in tax.
 #' @param user To obtain restricted data get a user name from https://spidertraits.sci.muni.cz/api.
 #' @param key To obtain restricted data get an api key from https://spidertraits.sci.muni.cz/api.
+#' @param order Order taxa names alphabetically or keep as in tax.
 #' @details The World Spider Trait database (Pekar et al. 2021) has been designed to contain trait data in a broad sense, from morphological traits to ecological characteristics, ecophysiology, behavioural habits, and more (Lowe et al. 2020). This function will download everything available for the taxa given, possibly filtered to the traits given in parameter trait. Some data might be restricted access, in which case a user name and api key are needed (https://spidertraits.sci.muni.cz/api), otherwise the value will show as NA.
 #' @return A matrix with trait data.
 #' @references Lowe, E., Wolff, J.O., Aceves-Aparicio, A., Birkhofer, K., Branco, V.V., Cardoso, P., Chichorro, F., Fukushima, C.S., Goncalves-Souza, T., Haddad, C.R., Isaia, M., Krehenwinkel, H., Audisio, T.L., Macias-Hernandez, N., Malumbres-Olarte, J., Mammola, S., McLean, D.J., Michalko, R., Nentwig, W., Pekar, S., Petillon, J., Privet, K., Scott, C., Uhl, G., Urbano-Tenorio, F., Wong, B.H. & Herbestein, M.E. (2020). Towards establishment of a centralized spider traits database. Journal of Arachnology, 48: 103-109. https://doi.org/10.1636/0161-8202-48.2.103
-#' @references Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
+#' @references Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The world spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
 #' @examples \dontrun{
 #' traits("Atypus affinis")
 #' traits("Atypus", order = TRUE)
@@ -303,7 +332,7 @@ taxonomy <- function(tax, order = FALSE){
 #' traits(c("Iberesia machadoi", "Zodarion costapratae"), trait = c("balo", "bole"))
 #' }
 #' @export
-traits <- function(tax, trait = NULL, sex = NULL, life = NULL, country = NULL, habitat = NULL, order = FALSE, user = "", key = ""){
+traits <- function(tax, trait = NULL, sex = NULL, life = NULL, country = NULL, habitat = NULL, user = "", key = "", order = FALSE){
 
   wsc()
   
@@ -366,8 +395,8 @@ traits <- function(tax, trait = NULL, sex = NULL, life = NULL, country = NULL, h
 #' @param order Order taxa names alphabetically or keep as in tax.
 #' @details Outputs non-duplicate records with geographical (long, lat) coordinates.
 #' As always when using data from multiple sources the user should be careful and check if records "make sense" before using them.
-#' @return A data.frame with species name, longitude, latitude and source.
-#' @references Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
+#' @return A data.frame with species name, longitude, latitude, source database and reference.
+#' @references Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The world spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
 #' @examples \dontrun{
 #' records("Pardosa hyperborea")
 #' records(tax = c("Pardosa hyperborea", "Anapistula"), order = TRUE)
@@ -382,20 +411,20 @@ records <- function(tax, order = FALSE){
   for (sp in tax){
     
     #get GBIF data
-    gdata = occ_data(scientificName = sp)
-    if("decimalLongitude" %in% colnames(gdata$data)){
-      if("institutionCode" %in% colnames(gdata$data))
-        gdata = data.frame(long = gdata$data$decimalLongitude, lat = gdata$data$decimalLatitude, reference = paste("GBIF -", gdata$data$institutionCode))
-      else
-        gdata = data.frame(long = gdata$data$decimalLongitude, lat = gdata$data$decimalLatitude, reference = "GBIF - NA")
+    gdata = occ_data(scientificName = sp)$data
+    if(length(gdata) > 1 && "decimalLongitude" %in% colnames(gdata)){
+      gdoi = c()
+      for(g in 1:nrow(gdata))
+        gdoi[g] = content(httr::GET(paste("https://api.gbif.org/v1/dataset/", gdata$datasetKey[g], sep = ""), limit = 10000))$doi
+      gdata = data.frame(long = gdata$decimalLongitude, lat = gdata$decimalLatitude, database = ("GBIF"), reference = gdoi)
       gdata = data.frame(species = rep(sp, nrow(gdata)), gdata)
       results = rbind(results, gdata)
     }
-                    
+
     #get WST data
     tdata = traits(sp)
     if(length(tdata) > 1){
-      tdata = data.frame(long = tdata$location.coords.lon, lat = tdata$location.coords.lat, reference = paste("WST -", tdata$reference.abbrev))
+      tdata = data.frame(long = tdata$location.coords.lon, lat = tdata$location.coords.lat, database = ("WST"), reference = tdata$reference.abbrev)
       tdata = data.frame(species = rep(sp, nrow(tdata)), tdata)
       results = rbind(results, tdata)
     }
@@ -417,37 +446,35 @@ records <- function(tax, order = FALSE){
 #' @param tax A taxon name or vector with taxa names.
 #' @param countries Maps countries according to WSC.
 #' @param records Maps records according to GBIF and WST.
-#' @param zoom if records is TRUE, the map will be zoomed to the region with records.
-#' @param window  Indicates if the map should open in a new window.
+#' @param hires Provides high resolution maps. Beware it might take longer to render.
+#' @param zoom If records is TRUE, the map will be zoomed to the region with records.
 #' @param order Order taxa names alphabetically or keep as in tax.
 #' @details Countries based on the interpretation of the textual descriptions available at the World Spider Catalogue (2021). These might be only approximations to country level and should be taken with caution.
 #' @return A world map with countries and records highlighted.
-#' @references Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
+#' @references Pekar, S., Cernecka, L., Wolff, J., Mammola, S., Cardoso, P., Lowe, E., Fukushima, C.S., Birkhofer, K. & Herberstein, M.E. (2021). The world spider trait database. Masaryk University, Brno, URL: https://spidertraits.sci.muni.cz
 #' @references World Spider Catalog (2021). World Spider Catalog. Version 22.0. Natural History Museum Bern, online at http://wsc.nmbe.ch. doi: 10.24436/2.
 #' @examples \dontrun{
 #' map(c("Pardosa hyperborea"))
 #' map("Amphiledorus", zoom = TRUE)
-#' map(c("Pardosa hyperborea", "Iberesia machadoi"), countries  = FALSE, zoom = TRUE, window = TRUE)
+#' map(c("Pardosa hyperborea", "Iberesia machadoi"), countries  = FALSE, hires = TRUE, zoom = TRUE)
 #' }
 #' @export
-map <- function(tax, countries = TRUE, records = TRUE, zoom = FALSE, window = FALSE, order = FALSE){
+map <- function(tax, countries = TRUE, records = TRUE, hires = FALSE, zoom = FALSE, order = FALSE){
 
   wsc()
   data(wscmap, package = "spidR", envir = environment())
-  
+
   #preprocess data
   tax = getTax(tax)
   if(order)
     tax = tax[order(tax)]
 
   #allow plotting multiple taxa
-  if(window)
-    mapDevice()
   if(length(tax) == 1)
     par(mfrow = c(1,1))
   else if(length(tax) == 2)
     par(mfrow = c(1,2))
-  else if(length(tax) > 25)
+  else if(length(tax) > 16)
     return("Too many maps to display simultaneously")
   else
     par(mfrow = c(ceiling(length(tax)^0.5),ceiling(length(tax)^0.5)))
@@ -471,7 +498,10 @@ map <- function(tax, countries = TRUE, records = TRUE, zoom = FALSE, window = FA
       iso = c("STP")
     }
     iso = data.frame(code = iso, exists = rep(1, length(iso)))
-    countryRegions <- joinCountryData2Map(iso, joinCode = "ISO3", nameJoinColumn = "code")
+    if(hires)
+      countryRegions <- joinCountryData2Map(iso, joinCode = "ISO3", nameJoinColumn = "code", mapResolution = "high")
+    else
+      countryRegions <- joinCountryData2Map(iso, joinCode = "ISO3", nameJoinColumn = "code", mapResolution = "coarse")
     
     #plot map
     if(!zoom)
@@ -490,7 +520,7 @@ map <- function(tax, countries = TRUE, records = TRUE, zoom = FALSE, window = FA
 
 #' Matrix matching WSC and ISO3 country codes.
 #'
-#'A dataset that links species distribution descriptions with the map using the ISO3 code
+#' A dataset that links species distribution descriptions with the map using the ISO3 code
 #'
 #' @docType data
 #' @keywords datasets
