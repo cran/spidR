@@ -1,13 +1,10 @@
 #####spidR - Spider Biodiversity Tools
-#####Version 1.0.1 (2021-04-19)
+#####Version 1.0.2 (2021-10-18)
 #####By Pedro Cardoso
 #####Maintainer: pedro.cardoso@helsinki.fi
 #####Reference: None yet.
-#####Changed from v1.0.0:
-#####new parameters in taxonomy
-#####implemented hires and deprecated window in map
-#####new outputs in records and checknames
-#####reordered parameters in traits
+#####Changed from v1.0.1:
+#####Warning of deprecated
 
 #####required packages
 library("graphics")
@@ -34,7 +31,7 @@ globalVariables(c("wscdata", "wscmap"))
 ################################################################################
 
 getTax <- function(tax){
-  
+
   #if any taxa not found break execution
   if(length(checknames(tax)) > 1){
     cat(paste("Some names were not found in WSC, e.g.,", checknames(tax)[1,1]), "\n")
@@ -69,24 +66,8 @@ getTax <- function(tax){
 #' @export
 wsc <- function(){
 
-  if(!exists("wscdata") || is.null(wscdata) || ((Sys.time() - attributes(wscdata)$lastUpdate) > 1440)){
-    
-    cat("Retrieving current data from the World Spider Catalogue (WSC)...\n")
-    #fetch data from wsc (try both current and previous day)
-    today = gsub("-", "", as.character(Sys.Date()))
-    yesterday = gsub("-", "", as.character(Sys.Date()-1))
-    wscdata = tryCatch(read.csv2(paste("https://wsc.nmbe.ch/resources/species_export_", today, ".csv", sep = ""), sep = ",", encoding = "UTF-8"),
-                   warning = function(x) x = read.csv2(paste("https://wsc.nmbe.ch/resources/species_export_", yesterday, ".csv", sep = ""), sep = ","), encoding = "UTF-8")
-    #clean data
-    wscdata[,1] = do.call(paste, wscdata[, 4:5])
-    colnames(wscdata)[1:2] = c("name", "lsid")
-    attr(wscdata, 'lastUpdate') = Sys.time()
+  warning("This package has been deprecated and is no longer supported. Please use package 'arakno'. Sorry for the inconvenience.")
 
-    #set wscdata as global variable
-    pos <- 1
-    envir = as.environment(pos)
-    assign("wscdata", wscdata, envir = envir)
-  }
 }
 
 #' Check taxa names in WSC.
@@ -106,7 +87,7 @@ wsc <- function(){
 checknames <- function(tax, full = FALSE, order = FALSE){
 
   wsc()
-  
+
   #get all species, genera and family names
   allNames = unique(c(wscdata[,1], wscdata[,3], wscdata[,4]))
 
@@ -117,7 +98,7 @@ checknames <- function(tax, full = FALSE, order = FALSE){
     mismatches = cbind(mismatches, rep(NA, length(mismatches)))
     colnames(mismatches) = c("Species", "Match")
     for(i in 1:nrow(mismatches)){
-      
+
       #detect synonyms
       tax2 = sub(" ", "%20", mismatches[i, 1])
       id = httr::GET(paste("https://spidertraits.sci.muni.cz/backend/taxonomy/valid-names?taxon=", tax2, sep = ""))
@@ -282,7 +263,7 @@ taxonomy <- function(tax, check = FALSE, aut = FALSE, id = FALSE, order = FALSE)
   if(check)
     tax = checknames(tax, full = TRUE)[, 2]
   tax = getTax(tax)
-  
+
   results = wscdata[wscdata$name %in% tax, c(2,3,4,1)]
   for(i in 1:nrow(results)){
     if(results$family[i] == "Liphistiidae")
@@ -294,15 +275,15 @@ taxonomy <- function(tax, check = FALSE, aut = FALSE, id = FALSE, order = FALSE)
   }
   colnames(results)[1:4] = c("Sub/Infraorder", "Family", "Genus", "Species")
   rownames(results) = NULL
-  
+
   if(order)
     results = results[order(results[, 1], results[, 2], results[, 3], results[, 4]), ]
   else
     results = results[order(match(results[, 4], tax)), ]
-  
+
     if(id)
     results = data.frame(results, lsid = lsid(results$Species)$LSID)
-  
+
   if(aut)
     results$Species = apply(authors(results$Species), 1, paste, collapse = " ")
 
@@ -335,7 +316,7 @@ taxonomy <- function(tax, check = FALSE, aut = FALSE, id = FALSE, order = FALSE)
 traits <- function(tax, trait = NULL, sex = NULL, life = NULL, country = NULL, habitat = NULL, user = "", key = "", order = FALSE){
 
   wsc()
-  
+
   #in wst information can also be at family or genus level
   higher = c()
   for(t in tax){
@@ -359,7 +340,7 @@ traits <- function(tax, trait = NULL, sex = NULL, life = NULL, country = NULL, h
       newTraits = httr::GET(paste("https://spidertraits.sci.muni.cz/backend/data/family/*/genus/*/species/", id, "/original-name/*/trait-category/*/trait/*/method/*/location/*/country/*/dataset/*/authors/*/reference/*/row-link/*?offset=0&limit=10000", sep = ""), authenticate(user, key, "basic"))
     }
     newTraits = as.data.frame(jsonlite::fromJSON(content(newTraits, "text"), flatten = TRUE)$items)
-    
+
     #apply filters
     if(nrow(newTraits) > 0){
       if(!is.null(trait))
@@ -376,7 +357,7 @@ traits <- function(tax, trait = NULL, sex = NULL, life = NULL, country = NULL, h
         colnames(newTraits)[38] = "location.coords.lat"
         newTraits$location.coords.lon = newTraits$location.coords.lat
         newTraits = newTraits[,c(1:38, 48, 39:47)]
-      } 
+      }
     }
     results = rbind(results, newTraits)
   }
@@ -406,10 +387,10 @@ records <- function(tax, order = FALSE){
 
   wsc()
   tax = getTax(tax)
-  
+
   results = c()
   for (sp in tax){
-    
+
     #get GBIF data
     gdata = occ_data(scientificName = sp)$data
     if(length(gdata) > 1 && "decimalLongitude" %in% colnames(gdata)){
@@ -478,7 +459,7 @@ map <- function(tax, countries = TRUE, records = TRUE, hires = FALSE, zoom = FAL
     return("Too many maps to display simultaneously")
   else
     par(mfrow = c(ceiling(length(tax)^0.5),ceiling(length(tax)^0.5)))
-  
+
   for(sp in tax){
     if(countries){
       #get distribution
@@ -486,12 +467,12 @@ map <- function(tax, countries = TRUE, records = TRUE, hires = FALSE, zoom = FAL
       distribution = tolower(strsplit(distribution, c("\\, | and | to |from |\\?|\\/|probably|possibly|introduced"))[[1]]) #split text in chunks
       distribution = sub("\\(.*", "", distribution) #remove everything after parentheses
       distribution = gsub("^\\s+|\\s+$", "", distribution) #remove trailing and white spaces
-      
+
       #convert distribution to ISO codes
       iso = wscmap[wscmap[,1] %in% distribution, -1]
       iso = colSums(iso)
       iso = names(iso[iso > 0])
-      
+
       #merge iso codes with map
       iso = unique(iso)
     } else {
@@ -502,7 +483,7 @@ map <- function(tax, countries = TRUE, records = TRUE, hires = FALSE, zoom = FAL
       countryRegions <- joinCountryData2Map(iso, joinCode = "ISO3", nameJoinColumn = "code", mapResolution = "high")
     else
       countryRegions <- joinCountryData2Map(iso, joinCode = "ISO3", nameJoinColumn = "code", mapResolution = "coarse")
-    
+
     #plot map
     if(!zoom)
       mapCountryData(countryRegions, nameColumnToPlot = "exists", mapTitle = sp, catMethod = "categorical", addLegend = FALSE, colourPalette = "negpos8", oceanCol = "lightblue", missingCountryCol = "white")
